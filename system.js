@@ -226,8 +226,8 @@ function show_message(message, tag_or_id, seconds){//used to display alerts to t
 }
 
 
-function store_list(){
-    return get_user_data().store_list 
+function preceptor_list(){
+    return get_user_data().preceptor_list 
 }
 
 
@@ -463,23 +463,23 @@ async function create_account(params){
                 <input placeholder="Email Address" name="email"><br>
                 <input placeholder="Phone Number" name="phone"><br>
                 <input placeholder="Password" name="password" type="password"><br>
-                Store: <select name="store">
+                Preceptor: <select name="preceptor">
                 <option value="" selected></option>
                 `]
 
-                params = {mode:'get_store_list'}
+                params = {mode:'get_preceptor_list'}
                 response = await server_request(params)
                 if(response.status!=="success"){
                     message({
                         title:"Error",
-                        message:"Unable to get store list.",
+                        message:"Unable to get preceptor list.",
                         kind:"error",
                         seconds:8
                     })
                 }                
     
 
-                for(const [key,val] of Object.entries(response.store_list)){
+                for(const [key,val] of Object.entries(response.preceptor_list)){
                         html.push(`<option value="${val}">${key}</option>`)
                 }
             html.push(`</select><br><br>

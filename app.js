@@ -144,24 +144,24 @@ async function record_inventory(params){
 
         const user_data = get_user_data()
         console.log ("user_data",user_data)
-        if(user_data.store.length===1){
+        if(user_data.preceptor.length===1){
             //If the user is associated with exactly 1 store, we call the get_inventory_list function again to populate the rest of the page with the data for that store. 
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'//this element is used to add a visual element (spinning wheel) to signify that the site is processing.
             //we call the get_inventory_list function (mode) filtered to show only "Ice Cream" (filter) - note that there are other inventory items - in the store associated with this user (store).
             record_inventory({
                 mode:"get_inventory_data",
                 filter:"list='Ice Cream'",
-                store:user_data.store[0]
+                store:user_data.preceptor[0]
             })
         }else{
             //We get here if the user is associated with more than 1 store. We build a form to have the user select the store they wish to work with.
-            const html=['<form>Store: <select name="store">']
-            for(store of user_data.store){
-                html.push(`<option value="${store}">${store_list()[store]}</option>`)
+            const html=['<form>Preceptor: <select name="preceptor">']
+            for(preceptor of user_data.preceptor){
+                html.push(`<option value="${preceptor}">${preceptor_list()[preceptor]}</option>`)
             }
             //When the user selects the store using the form, the "get_inventory_list" function is invoked on the submission of the form to populate the rest of this page with the data for that store
             html.push(`</select>
-                        <button type="button" id="choose_store_button" onclick="record_inventory(form_data(this,true))">Submit</button>
+                        <button type="button" id="choose_preceptor_button" onclick="record_inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_data">
                         <input type="hidden" name="filter" value="list='Ice Cream'">
                         </form>`)
@@ -170,7 +170,7 @@ async function record_inventory(params){
 
     }else{    
         //Notice that the first time through the store property is undefined and is set when the user data is loaded. Therefore this code will only process the second time through once the store property is set. During this pass, we determine whether to display the report of the last recorded inventory or display the form for recording a new inventory count.
-        console.log("at ice_cream_inventory params=store")
+        console.log("at ice_cream_inventory params=preceptor")
         //we use a call to the "server_request" function to use Google App Script to retrieve the data needed to processs the form or the report
         
         const response=await server_request(params)
@@ -187,7 +187,7 @@ async function record_inventory(params){
             window.cols={}
             console.log("response", response)
             // build the HTML header for the page identifying the store for which the counts will be recorded
-            tag("inventory-title").innerHTML=`<h2>${store_list()[params.store]} Ice Cream Inventory</h2>`
+            tag("inventory-title").innerHTML=`<h2>${preceptor_list()[params.preceptor]} Ice Cream Inventory</h2>`
             const html=["Fill in every row in this section."]
             //build the table for the form used to record the counts.
             const header=[`
@@ -225,7 +225,7 @@ async function record_inventory(params){
                 target.push(`<th>${record.fields.name}</th>`)
                 //build a text input in each cell. Use the combination of the flavor and container ids as the identifier of the input so that we can use it to update the correct record. When a value in the input is change (onchange), the update_observation function is called and passed the value and information needed (store, flavor, and container) to add the observation to the database. update_observation is a function in Amazon App Script.
                 for(container of record.fields.container){
-                    target.push(`<td class="active col-${window.cols[container]}"><input id="${record.id}|${container.replace(/\s/g,"_")}" data-store="${params.store}" data-item_id="${record.id}" data-container="${container}" type="text" onchange="update_observation(this)"></td>`)
+                    target.push(`<td class="active col-${window.cols[container]}"><input id="${record.id}|${container.replace(/\s/g,"_")}" data-preceptor="${params.preceptor}" data-item_id="${record.id}" data-container="${container}" type="text" onchange="update_observation(this)"></td>`)
                 }     
                 target.push(`<td  class="inactive" id="${record.id}|total"></td></tr>`)//This sets the background color for items that have been updated to provide a visual cue that the element has been updated.
             }     
@@ -321,7 +321,7 @@ async function show_inventory_summary(params){
     const response=await server_request({
         mode:"get_inventory_summary",
         filter:"list='Ice Cream'",
-        store:user_data.store,
+        preceptor:user_data.preceptor,
     })
     tag("inventory-message").innerHTML=''
 
@@ -341,7 +341,7 @@ async function show_inventory_summary(params){
             <th class="sticky">Flavor</th>
             `]
 
-        for(const [key,val] of Object.entries(store_list())){
+        for(const [key,val] of Object.entries(preceptor_list())){
             if(key.indexOf("rec")===0){
                 header.push(`<th class="sticky">${val}</th>`)
             }
@@ -365,7 +365,7 @@ async function show_inventory_summary(params){
             target.push(`<td style="text-align:left">${record.fields.name}</td>`)
             //create empty cells in the table for the inventory counts. Notice that the ID for the empty cell is set to be a combination of the id for the flavor (record.id) and the store (stores[store]) corresponding to the column. This way the table can be populated with the correct data in the correct cells.
 
-            for(const [key,val] of Object.entries(store_list())){
+            for(const [key,val] of Object.entries(preceptor_list())){
                 if(key.indexOf("rec")===0){
                     target.push(`<td id="${record.id}|${key}"></td>`)
                 }
@@ -542,12 +542,12 @@ async function update_observation(entry){
     }
     //We get here if value data has been entered in an input box.
     const flavor_id = entry.id.split("|")[0] //grab the identifier for the flavor
-    //build an object with the flavorID, store, container, and quantity to be updated.
+    //build an object with the flavorID, preceptor, container, and quantity to be updated.
     const params={
         item_id:entry.dataset.item_id,
         quantity:entry.value,
         container:entry.dataset.container,
-        store:entry.dataset.store,
+        preceptor:entry.dataset.preceptor,
     }
     //visually signal by modifying the appearance of the cell that the value is currently being updated.
     entry.parentElement.style.backgroundColor=null

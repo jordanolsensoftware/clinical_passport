@@ -151,7 +151,7 @@ async function record_inventory(params){
             record_inventory({
                 mode:"get_inventory_data",
                 filter:"list='Ice Cream'",
-                store:user_data.preceptor[0]
+                preceptor:user_data.preceptor[0]
             })
         }else{
             //We get here if the user is associated with more than 1 store. We build a form to have the user select the store they wish to work with.
@@ -391,7 +391,7 @@ async function show_inventory_summary(params){
             //process through each available data item
             for(record of response.data.records){
                 //identity the flavor/store combination for each observation
-                const id = record.fields.item[0] + "|" + record.fields.store[0]
+                const id = record.fields.item[0] + "|" + record.fields.preceptor[0]
                 //Since the data is ordered by date, if we have already found an observation for a flavor/store combination, any additional obeservations are skipped.
                 if(!data[id]){
                     data[id]={quantity:record.fields.quantity,date:record.fields.date}

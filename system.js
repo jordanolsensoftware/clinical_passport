@@ -390,6 +390,119 @@ async function personal_data(params){
     }
 }    
 
+async function create_student(params){
+    if(!user_has_role(["administrator"])){show_home();return}
+    const panel=tag("create_student_panel")
+    hide_menu()
+    
+    if(!params){ 
+        tag("canvas").innerHTML=` 
+        <div class="page">
+            <h2>New Student</h2>
+            <div id="create-student-message" style="width:170px;padding-top:1rem;margin-bottom:1rem">
+            Enter the new student information here.  If present, the student can enter a password of their choosing; otherwise, make one up and they can reset it.
+            </div>
+            <div id="create_student_panel"></div>
+        </div>
+        `
+        create_student({action:"show-form"})
+    }else if(params.button){
+        if(params.button==='Create Student'){
+            response = await server_request(params)
+            console.log("response in submit_account", response)
+            tag("create-student-message").innerHTML="Check your email for a code and enter it here."
+            if(response.status==="success"){
+                panel.innerHTML=`
+                ${params.first_name}
+                ${params.last_name}<br>
+                ${params.email}<br>
+                <form>
+                <input placeholder="Code From Email" name="code"><br>
+                <input type="hidden" name="mode" value="verify_account">
+                <input type="hidden" name="email" value="${params.email}">
+                <button type="button" onclick="create_student(form_data(this,true))">Verify Account</button>
+                </form>   
+            `    
+                
+
+            }else{
+            tag("create-student-message").innerHTML="Account creation failed. " + response.message
+            tag("create_student_button").innerHTML="Create Student"    
+            }
+        }else if (params.button==='Verify Account'){
+            response = await server_request(params)
+            if(response.status==="success"){
+                message({
+                    title:"Account Verified",
+                    message:"You are now logged in.",
+                    seconds:3
+                })                
+                // might make a call back to server at this point
+                build_menu(authenticated_menu)
+                show_home()
+                
+            }else{
+                message({
+                    title:"Confirmation Failure",
+                    message:`Failed to confirm account: ${response.message}`,
+                    kind:"error",
+                    seconds:5    
+                })                
+            }
+        }else{
+            console.log("invalid process:", params.button)
+        }
+
+    }else if(params.action==="show-form"){    
+        if(panel.innerHTML===""){
+            panel.style.display="block"
+            const html=[`
+            <form>
+                <input placeholder="First Name" name="first_name" id="1234"><br>
+                <input placeholder="Last Name" name="last_name"><br>
+                <input placeholder="Email Address" name="email"><br>
+                <input placeholder="Phone Number" name="phone"><br>
+                <input placeholder="Password" name="password" type="password"><br>
+                Preceptor: <select name="preceptor">
+                <option value="" selected></option>
+                `]
+
+                params = {mode:'get_preceptor_list'}
+                response = await server_request(params)
+                if(response.status!=="success"){
+                    message({
+                        title:"Error",
+                        message:"Unable to get preceptor list.",
+                        kind:"error",
+                        seconds:8
+                    })
+                }                
+    
+
+                for(const [key,val] of Object.entries(response.preceptor_list)){
+                        html.push(`<option value="${val}">${key}</option>`)
+                }
+            html.push(`</select><br><br>
+                    Other employees can see ...<br>
+                    <select name="visibility">
+                        <option value="show-all" selected>my phone and email</option>
+                        <option value="email-only">my email address only</option>
+                        <option value="phone-only">my phone number only</option>
+                        <option value="hide-all">no contact details</option>
+                    </select><br><br>
+                    <input type="hidden" name="mode" value="create">
+                    <input type="hidden" name="confirm" value="${location.href.split("?")[0]}">
+                    <button id="create_student_button" type="button" onclick="create_student(form_data(this,true))">Create Student</button>
+                </form>   
+            `)
+            panel.innerHTML=html.join("")
+            tag("1234").focus()
+        }else{
+            toggle(panel)
+        }
+}
+}    
+
 async function create_account(params){
     if(!user_has_role(["owner","manager","administrator"])){show_home();return}
     const panel=tag("create_account_panel")
@@ -485,9 +598,6 @@ async function create_account(params){
             html.push(`</select><br><br>
                     Other employees can see ...<br>
                     <select name="visibility">
-                        <option value="show-all" selected>my phone and email</option>
-                        <option value="email-only">my email address only</option>
-                        <option value="phone-only">my phone number only</option>
                         <option value="hide-all">no contact details</option>
                     </select><br><br>
                     <input type="hidden" name="mode" value="create">

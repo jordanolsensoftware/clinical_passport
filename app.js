@@ -7,7 +7,7 @@ const gas_end_point = 'https://script.google.com/macros/s/'+gas_deployment_id+'/
 const nav_menu=[
     //Note that a menu item is added by inserting an object for that menu item. The 'label' is the text that the user sees for that menu option. The function is the javascript function invoked when selecting that option. Here we insert the "home" and "locations" menu items. Both initiate a call to the navigate function which loads the appropriate page. The navigate function is used to help ensure smooth navigation. It allows the user to use the back botton in their browser when navigating between pages on the site (without navigating out ot the site). The navigate can accept parameters that can be passed to the function called by navigate.
     {label:"Home",function:"navigate({fn:'show_home'})"},
-    {label:"Locations",function:"navigate({fn:'show_locations'})"},
+    //{label:"Locations",function:"navigate({fn:'show_locations'})"},
     
 ]
 
@@ -38,10 +38,10 @@ const authenticated_menu=[
     //This menu item allows the user to logout
     {label:"Logout",function:"logout()", home:"Logout"},
     //This menu item builds a sub menu that provides the user with the functionality to request time off and see their requests
-    {label:"Time Off",id:"menu1",menu:[
-        {label:"Request Time Off",function:"navigate({fn:'request_time_off'})"}, 
-        {label:"My Requests",function:"navigate({fn:'show_time_off'})"}, 
-    ]},
+    //{label:"Time Off",id:"menu1",menu:[
+        //{label:"Request Time Off",function:"navigate({fn:'request_time_off'})"}, 
+        //{label:"My Requests",function:"navigate({fn:'show_time_off'})"}, 
+    //]},
     //This menu item allows the user to add additional users. Note the "roles" property of the object. Only users with the role of "manager", "owner", or "administrator" will see this menu item. User roles are not heirachical. All user types you wish to see a menu item must be listed in the elements of the array.
     //{label:"Add Employee",function:"navigate({fn:'create_account'})", roles:["manager","owner","administrator"]}, 
     //This menu item adds the menu item for updating an inventory count. Notice how a parameter is passed to the "ice_cream_inventory" function
@@ -49,13 +49,16 @@ const authenticated_menu=[
     //the remaining menu items are added
     //{label:"Ice Cream Inventory Summary",home:"Inventory",function:"navigate({fn:'show_inventory_summary'})", roles:["owner","administrator"]},
 
-    {label:"Employee List",function:"navigate({fn:'employee_list'})"},
+    //{label:"Employee List",function:"navigate({fn:'employee_list'})"},
     {label:"Admin Tools",id:"menu2", roles:["manager","owner","administrator"], menu:[
         {label:"Add User",function:"navigate({fn:'create_account'})", roles:["administrator"]}, 
         {label:"Update User",function:"update_user()",panel:"update_user"},
     ]},
     {label:"Preceptor Tools",id:"menu3", roles:["preceptor","administrator"], menu:[
         {label:"Procedure List",function:"navigate({fn:'show_procedure_summary'})", roles:["preceptor","administrator"]},
+    ]},
+    {label:"Student Tools",id:"menu4", roles:["student","administrator"], menu:[
+        {label:"Procedure List",function:"navigate({fn:'show_student_procedure_summary'})", roles:["student","administrator"]},
     ]},
     //{label:"Job List",function:"navigate({fn:'show_job_summary'})"},
     //{label:"Procedure List",function:"navigate({fn:'show_procedure_summary'})", roles:["preceptor","administrator"]},
@@ -136,6 +139,89 @@ async function update_procedure(record_id,status){
         mode:"update_procedures", id: record_id, changeTo: status
     })
     show_procedure_summary()
+}
+
+
+async function show_student_procedure_summary(params){
+    console.log('in show_procedure_summary')
+    if(!logged_in()){show_home();return}//in case followed a link after logging out. This prevents the user from using this feature when they are not authenticated.
+ 
+    //First we hide the menu
+    hide_menu()
+    //This function is set up recursively to build the page for working with inventory. The first time the function is called, the HTML shell is created for displaying either the inventory form for recording the count or the inventory report. Note that this will only be built if there is a "style" property set when the function is called. Once the shell is created, the function is called again to either built the form for recording an inventory count or create the summary report.
+    //building the HTML shell
+    tag("canvas").innerHTML=`
+        <div class="page">
+            <div id="procedure-title" style="text-align:center"><h2>Student Procedures</h2></div>
+            <div id="procedure-message" style="width:100%"></div>
+            <div id="procedure_panel"  style="width:100%">
+            </div>
+        </div>  
+    `
+    //loading user data. Any user can record an inventory count, so we don't need to check their role at this point. If a user is associated with more than one store and they wish to record an inventory count, they will be prompted to select the store they want to work with.
+ 
+    const user_data = get_user_data()
+    console.log ("user_data",user_data)
+    //If the user wants to see a summary of the most recent count, we call the "get_inventory_summary" function to populate the page with data from all of the stores that are associated with that user.
+    tag("procedure-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'
+    
+    const response=await server_request({
+        mode:"get_procedures",
+    })
+    tag("procedure-message").innerHTML=''
+
+    //const student_name = get_user_name()
+ 
+    if(response.status==="success"){//If the data is retrieved successfully, we proceed.
+    
+        //If the style property is set to "summary", we build the report of the most recent count.
+ 
+        console.log("response", response)
+        //Build the table to display the report. The columns of the table are: Flavor, the stores available to the user, and the total inventory. Since only the owner is given the option to view inventory counts (see the autheticated_user global variable), all stores will be shown in the report.
+        const header=[`
+        <table class="inventory-table">
+            <tr>
+            <th class="sticky">Procedure</th>
+            <th class="sticky">Student</th>
+            <th class="sticky">Status</th>
+            `]
+ 
+        header.push("</tr>")
+        const html=[header.join("")]
+
+        const student_name = get_user_name()
+
+        //const filteredResponse = response.Student.filter(item => {
+            //if (item !== student_name){
+                //return false;
+            //}
+            //return true
+        //})
+
+        const filteredResponse = response
+
+        //const record = response.records
+        for(const record of filteredResponse.records){
+        //for(const record of response.records){
+        //for(record; record.Student === student_name;){
+            html.push('<tr>')
+            html.push(`<td>${record.fields.Name}</td>`)
+            html.push(`<td>${record.fields.Student}</td>`)
+            html.push(`<td>${record.fields.Status}</td>`)
+            //html.push(`<td><a class="tools" onclick="update_procedure('${record.id}','progress')">Mark as In progress</a>|<a class="tools" onclick="update_procedure('${record.id}','done')">Mark as Done</a></td>`)
+            html.push('</tr>')    
+        }
+ 
+        html.push("</table>")
+        tag("procedure_panel").innerHTML=html.join("")
+ 
+ 
+        
+    }else{
+        //This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
+        tag("procedure_panel").innerHTML="Unable to get procedure list: " + response.message + "."        
+    }
+ 
 }
 
 

@@ -511,9 +511,9 @@ async function create_account(params){
     if(!params){ 
         tag("canvas").innerHTML=` 
         <div class="page">
-            <h2>New Employee</h2>
+            <h2>New User</h2>
             <div id="create-account-message" style="width:170px;padding-top:1rem;margin-bottom:1rem">
-            Enter the new employee information here.  If present, the employee can enter a password of thier choosing; otherwise, make one up and they can reset it.
+            Enter the new user information here.  If present, the user can enter a password of their choosing; otherwise, make one up and they can reset it.
             </div>
             <div id="create_account_panel"></div>
         </div>
@@ -576,7 +576,7 @@ async function create_account(params){
                 <input placeholder="Email Address" name="email"><br>
                 <input placeholder="Phone Number" name="phone"><br>
                 <input placeholder="Password" name="password" type="password"><br>
-                Preceptor: <select name="preceptor">
+                Clinic: <select name="Clinic">
                 <option value="" selected></option>
                 `]
 
@@ -585,7 +585,7 @@ async function create_account(params){
                 if(response.status!=="success"){
                     message({
                         title:"Error",
-                        message:"Unable to get preceptor list.",
+                        message:"Unable to get clinic list.",
                         kind:"error",
                         seconds:8
                     })
@@ -596,7 +596,7 @@ async function create_account(params){
                         html.push(`<option value="${val}">${key}</option>`)
                 }
             html.push(`</select><br><br>
-                    Other employees can see ...<br>
+                    Other users can see ...<br>
                     <select name="visibility">
                         <option value="hide-all">no contact details</option>
                     </select><br><br>
